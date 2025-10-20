@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>チャットポートフォリオ</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: radial-gradient(circle at top, #b2ebf2, #e0f7fa);
+      margin: 0;
+      padding: 10px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.4rem;
+      color: #00796b;
+      margin-bottom: 12px;
+      text-shadow: 1px 1px 2px #ffffff;
+    }
+    .chat {
+      border: 1px solid #b2dfdb;
+      border-radius: 12px;
+      padding: 10px;
+      max-width: 400px;
+      height: 320px;
+      margin: 0 auto 12px;
+      background-color: #ffffffcc;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .bubble {
+      margin: 6px 0;
+      padding: 8px 12px;
+      border-radius: 16px;
+      max-width: 75%;
+      font-size: 0.9rem;
+      word-wrap: break-word;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .user {
+      background-color: #a5d6a7;
+      align-self: flex-end;
+      text-align: right;
+    }
+    .bot {
+      background-color: #fff59d;
+      align-self: flex-start;
+      text-align: left;
+    }
+    #userInput, #nicknameInput {
+      width: calc(100% - 40px);
+      max-width: 360px;
+      padding: 8px;
+      margin: 0 auto 6px;
+      display: block;
+      border-radius: 6px;
+      border: 1px solid #80deea;
+      font-size: 0.9rem;
+      background-color: #e0f7fa;
+    }
+    button {
+      display: block;
+      margin: 0 auto;
+      padding: 8px 20px;
+      background-color: #4dd0e1;
+      border: none;
+      border-radius: 20px;
+      color: white;
+      font-size: 0.9rem;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      transition: transform 0.1s ease;
+    }
+    button:hover {
+      background-color: #26c6da;
+      transform: scale(1.05);
+    }
+    #loginError {
+      text-align: center;
+      color: red;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>チャットポートフォリオ💧</h1>
+
+  <div id="login">
+    <input type="text" id="nicknameInput" placeholder="ニックネームを入力" />
+    <button onclick="setNickname()">参加する</button>
+    <p id="loginError"></p>
+  </div>
+
+  <div class="chat" id="chat" style="display:none;"></div>
+  <input type="text" id="userInput" placeholder="メッセージを入力..." style="display:none;" />
+  <button onclick="sendMessage()" id="sendBtn" style="display:none;">送信</button>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let nickname = "";
+    let myIcon = "";
+
+    function setNickname() {
+      const input = document.getElementById("nicknameInput");
+      nickname = input.value.trim();
+      if (!nickname) return;
+
+      socket.emit("set nickname", nickname);
+    }
+
+    socket.on("nickname accepted", (icon) => {
+      myIcon = icon;
+      document.getElementById("login").style.display = "none";
+      document.getElementById("chat").style.display = "flex";
+      document.getElementById("userInput").style.display = "block";
+      document.getElementById("sendBtn").style.display = "block";
+    });
+
+    socket.on("nickname rejected", () => {
+      document.getElementById("loginError").textContent = "このニックネームは使えません！";
+    });
+
+    socket.on("banned", () => {
+      alert("あなたはBANされています。");
+      location.reload();
+    });
+
+    function sendMessage() {
+      const input = document.getElementById("userInput");
+      const message = input.value.trim();
+      if (!message) return;
+
+      socket.emit("chat message", { nickname, message });
+      input.value = "";
+
+      addBubble(nickname, myIcon, message, true);
+    }
+
+    socket.on("chat message", ({ nickname, icon, message }) => {
+      addBubble(nickname, icon, message, false);
+    });
+
+    function addBubble(name, icon, text, isUser) {
+      const bubble = document.createElement("div");
+      bubble.className = `bubble ${isUser ? "user" : "bot"}`;
+      bubble.textContent = `${icon} ${name}: ${text}`;
+      document.getElementById("chat").appendChild(bubble);
+      document.getElementById("chat").scrollTop = chat.scrollHeight;
+    }
+  </script>
+</body>
+</html>
